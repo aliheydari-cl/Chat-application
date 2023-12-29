@@ -31,5 +31,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
+    bool serverIsOn = false;
+    bool clentIsOn = false;
+
 };
 #endif // MAINWINDOW_H

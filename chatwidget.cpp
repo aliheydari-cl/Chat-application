@@ -3,12 +3,14 @@
 
 #include <QListWidgetItem>
 
-ChatWidget::ChatWidget(QTcpSocket *socket, QWidget *parent)
+ChatWidget::ChatWidget(QTcpSocket *socket, QWidget *parent, bool isServer)
     : QWidget(parent)
     , ui(new Ui::ChatWidget)
     , _socket(socket)
 {
     ui->setupUi(this);
+    if(isServer)
+        ui->nameFrame->deleteLater();
 
     connect(_socket, &QTcpSocket::readyRead, this, &ChatWidget::redyRead);
 
@@ -21,9 +23,27 @@ ChatWidget::~ChatWidget()
 
 void ChatWidget::redyRead()
 {
-    auto data = _socket->readAll();
-    auto _textChat = new textChat();
+    QByteArray const data = _socket->readAll();
 
+    _protocol.loadData(data);
+
+    switch (_protocol.getType()) {
+    case protocol::isTyping:
+        emit isTyping();
+        return;
+        break;
+
+    case protocol::NameChange:
+        emit nameChanged(_protocol.name);
+
+        return;
+        break;
+
+    default:
+        break;
+    }
+
+    auto _textChat = new textChat();
     _textChat->setMasseage(data);
 
     QListWidgetItem *listWidgetItem = new QListWidgetItem();
@@ -36,9 +56,12 @@ void ChatWidget::redyRead()
 
 void ChatWidget::on_btnSend_clicked()
 {
-    auto _textChat = new textChat();
 
-    auto data = ui->leData->text().trimmed();
+    QString data = ui->leData->text().trimmed();
+    if(data == "")
+        return;
+
+    auto _textChat = new textChat();
     _textChat->setMasseage(data, true);
 
     QListWidgetItem *listWidgetItem = new QListWidgetItem();
@@ -55,4 +78,23 @@ void ChatWidget::on_btnSend_clicked()
 
 }
 
+void ChatWidget::on_leData_textChanged()
+{
+    _socket->write(_protocol.setStatus());
+}
+
+
+void ChatWidget::on_leName_editingFinished()
+{
+    QString name = ui->leName->text().trimmed();
+    _socket->write(_protocol.setName(name));
+    _socket->setProperty("name", name);
+    ui->leName->setText("");
+}
+
+
+void ChatWidget::on_leData_editingFinished()
+{
+    on_btnSend_clicked();
+}
 

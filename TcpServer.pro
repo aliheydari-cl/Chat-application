@@ -12,12 +12,14 @@ SOURCES += \
     chatwidget.cpp \
     main.cpp \
     mainwindow.cpp \
+    protocol.cpp \
     server.cpp \
     textchat.cpp
 
 HEADERS += \
     chatwidget.h \
     mainwindow.h \
+    protocol.h \
     server.h \
     textchat.h
 
