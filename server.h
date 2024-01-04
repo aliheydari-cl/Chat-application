@@ -15,15 +15,15 @@ public:
     void setUpClient();
 
 signals:
-    void server_newClientConnected(QTcpSocket *client);
-    void server_ConnectedToServer(QTcpSocket *client);
+    void newClientConnected(QTcpSocket *client);
+    void connectedToServer(QTcpSocket *client);
 
 private slots:
     void newConection();
 
     void clientDisconnected();
 
-    void clientConnected();
+    void clientConnectedToServer();
 
 
 private:

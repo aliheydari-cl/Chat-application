@@ -1,7 +1,6 @@
 #ifndef CHATWIDGET_H
 #define CHATWIDGET_H
 
-#include "server.h"
 #include <textchat.h>
 #include <QWidget>
 #include <QTcpServer>
@@ -19,14 +18,21 @@ class ChatWidget : public QWidget
 public:
     explicit ChatWidget(QTcpSocket *socket, QWidget *parent = nullptr, bool isServer = false);
     ~ChatWidget();
+    QString _name;
+
+public slots:
+    void sendFile();
+    void acceptedSendFile();
+    void setFileRejected();
+
 
 signals:
-    void chatWidget_datarecived(QByteArray data);
-
     void isTyping();
 
     void nameChanged(QString);
-
+    void initSendFile(QString, qint64);
+    void sendFile(QString, qint64, QByteArray);
+    void btnSendClicked(QString, qint64, bool);
 
 private slots:
 
@@ -40,13 +46,28 @@ private slots:
 
     void on_leData_editingFinished();
 
+    void on_btnSendFile_clicked();
+
+    void dataReceived(QString, QByteArray);
+
+    void on_lblOpen_linkActivated();
+
+    void fileRejected();
+
 private:
     Ui::ChatWidget *ui;
 
+    bool _isServer;
+
     QTcpSocket *_socket;
-    QTcpServer *_server;
 
     protocol _protocol;
+
+    QString _sendFilePath;
+    QString _openFilePath;
+
+    qint64 _size;
+    QByteArray _data;
 };
 
 #endif // CHATWIDGET_H

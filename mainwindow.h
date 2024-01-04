@@ -20,19 +20,28 @@ public:
     ~MainWindow();
 
 private slots:
-    void newClientconnected(QTcpSocket *client);
+    void newClientConnected(QTcpSocket *client);
 
-    void clientConnnectedToServer(QTcpSocket *client);
+    void clientConnectedToServer(QTcpSocket *client);
 
     void on_actionServer_Mode_triggered();
 
     void on_actionClient_mode_triggered();
 
+    void OnInitSendFile(QString path, qint64 size);
+
+    void onRejectionSendFile();
+
+signals:
+    void fileInitRejected();
+
 private:
     Ui::MainWindow *ui;
+    ChatWidget *_clientChatWidget;
+    ChatWidget *_serverChatWidget;
 
-    bool serverIsOn = false;
-    bool clentIsOn = false;
+    bool isServerActive = false;
+    bool isClientActive = false;
 
 };
 #endif // MAINWINDOW_H

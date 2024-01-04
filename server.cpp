@@ -17,15 +17,13 @@ void Server::setUpServer()
     QTcpServer *server = new QTcpServer();
     server->listen(QHostAddress::Any, 6000);
     connect(server, &QTcpServer::newConnection, this, &Server::newConection);
-
 }
 
 void Server::setUpClient()
 {
     QTcpSocket *socket = new QTcpSocket();
     socket->connectToHost(QHostAddress::LocalHost, 6000);
-    connect(socket, &QTcpSocket::connected, this, &Server::clientConnected);
-
+    connect(socket, &QTcpSocket::connected, this, &Server::clientConnectedToServer);
 }
 
 void Server::newConection()
@@ -38,8 +36,7 @@ void Server::newConection()
 
     connect(client, &QTcpSocket::disconnected, this, &Server::clientDisconnected);
 
-    emit server_newClientConnected(client);
-
+    emit newClientConnected(client);
 }
 
 void Server::clientDisconnected()
@@ -49,14 +46,13 @@ void Server::clientDisconnected()
     socketList.removeOne(socket);
 }
 
-void Server::clientConnected()
+void Server::clientConnectedToServer()
 {
     auto client = qobject_cast<QTcpSocket *>(sender());
 
     connect(client, &QTcpSocket::disconnected, this, &Server::clientDisconnected);
 
-    emit server_ConnectedToServer(client);
-
+    emit connectedToServer(client);
 }
 
 
