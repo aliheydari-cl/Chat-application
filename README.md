@@ -21,4 +21,4 @@ make
 ```
 ## Demo
 
-![S01](image/chatApplication)
+![chatApplication](image/chatApplication)
