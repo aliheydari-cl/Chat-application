@@ -21,4 +21,4 @@ make
 ```
 ## Demo
 
-![chatApplication](image/chatApplication)
+![chatApplication](image/chatApplication.png)
