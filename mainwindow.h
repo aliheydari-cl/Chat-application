@@ -19,21 +19,19 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+
 private slots:
     void newClientConnected(QTcpSocket *client);
-
     void clientConnectedToServer(QTcpSocket *client);
-
     void on_actionServer_Mode_triggered();
-
     void on_actionClient_mode_triggered();
-
-    void OnInitSendFile(QString path, qint64 size);
-
+    void onInitSendFile(QString path, qint64 size);
     void onRejectionSendFile();
 
 signals:
     void fileInitRejected();
+    void clientNameChanged(QString, QString);
+
 
 private:
     Ui::MainWindow *ui;
@@ -42,6 +40,10 @@ private:
 
     bool isServerActive = false;
     bool isClientActive = false;
+
+    Server *_server;
+
+    QMap<QTcpSocket *, ChatWidget *> chatList;
 
 };
 #endif // MAINWINDOW_H

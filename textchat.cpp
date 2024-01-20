@@ -19,6 +19,7 @@ void textChat::setMasseage(QString message, bool isMyMessage)
 {
     ui->lblText->setText(message);
     ui->lblTime->setText(QTime::currentTime().toString("hh:mm"));
+
     if(isMyMessage)
         ui->lblText->setAlignment(Qt::AlignRight);
 }

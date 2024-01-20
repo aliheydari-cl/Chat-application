@@ -6,7 +6,7 @@
 #include <QDesktopServices>
 #include <QMessageBox>
 
-ChatWidget::ChatWidget(QTcpSocket *socket, QWidget *parent, bool isServer)
+ChatWidget::ChatWidget(QWidget *parent, QTcpSocket *socket, bool isServer)
     : QWidget(parent)
     , ui(new Ui::ChatWidget)
     , _isServer(isServer)
@@ -16,25 +16,14 @@ ChatWidget::ChatWidget(QTcpSocket *socket, QWidget *parent, bool isServer)
     if(isServer)
     {
         ui->nameFrame->deleteLater();
+        ui->cbClients->deleteLater();
 
         QDir dir;
         QString path = QDir::currentPath() + "/Server";
         dir.mkdir(path);
         _openFilePath = path;
-    }
-    else
-    {
-        QString filePath = QDir::currentPath();
 
-        int i = 1;
-        QString path = filePath + QString("/Client %1").arg(i);
-        QDir dir;
-
-        while (dir.exists(path))
-            path = filePath + QString("/Client %1").arg(++i);;
-
-        dir.mkdir(path);
-        _openFilePath = path;
+        _myName = "Server";
     }
 
     connect(_socket, &QTcpSocket::readyRead, this, &ChatWidget::redyRead);
@@ -45,6 +34,27 @@ ChatWidget::~ChatWidget()
     delete ui;
 }
 
+void ChatWidget::setInformation(QString name, QStringList list)
+{
+    QString filePath = QDir::currentPath();
+    QString path = filePath + "/" + name;
+    QDir dir;
+
+    dir.mkdir(path);
+
+    _openFilePath = path;
+    _myName = name;
+    _socket->setProperty("name", name);
+
+    ui->cbClients->addItem("Server");
+
+    foreach (QString var, list) {
+        if(var != _myName)
+            ui->cbClients->addItem(var);
+    }
+}
+
+
 void ChatWidget::redyRead()
 {
     QByteArray const data = _socket->readAll();
@@ -52,72 +62,89 @@ void ChatWidget::redyRead()
     _protocol.loadData(data);
 
     switch (_protocol.getType()) {
+    case protocol::sendInformation:
+    {
+        setInformation(_protocol.name(), _protocol.list());
+        _socket->setProperty("name", _protocol.name());
+        break;
+    }
+
+    case protocol::message:
+        loadMessage(_protocol.getMessage(), _protocol.receiverName());
+        break;
+
     case protocol::isTyping:
         emit isTyping();
-        return;
         break;
 
-    case protocol::NameChange:
-        emit nameChanged(_protocol.name());
-
-        return;
+    case protocol::nameChange:
+    {
+        emit nameChanged(_protocol.prevName(), _protocol.newName());
+        if(_isServer)
+            _socket->setProperty("name", _protocol.newName());
         break;
+    }
 
     case protocol::initSendFile:
-        emit initSendFile(_protocol._path, _protocol._size);
+        emit initSendFile(_protocol.path(), _protocol.size());
 
-        return;
         break;
 
     case protocol::sendFile:
-        dataReceived(_protocol._path, _protocol.data());
+        dataReceived(_protocol.path(), _protocol.data());
 
-        return;
         break;
+
     case protocol::sendRejectionFile:
         fileRejected();
-        return;
+
         break;
 
     case protocol::acceptedSendFile:
         sendFile();
-        return;
+
+        break;
+
+    case protocol::sendNewClient:
+        newClientReceived(_protocol.name());
+
+        break;
+
+    case protocol::sendDisconnectClient:
+        clientDisconnected(_protocol.name());
+
+        break;
+
+    case protocol::sendNameChangeClient:
+
+        clientNameChange(_protocol.prevName(), _protocol.newName());
+
         break;
 
     default:
         break;
+
     }
-
-    auto _textChat = new textChat();
-    _textChat->setMasseage(data);
-
-    QListWidgetItem *listWidgetItem = new QListWidgetItem();
-    ui->lwChat->addItem(listWidgetItem);
-    listWidgetItem->setSizeHint(QSize(0, 65));
-    listWidgetItem->setBackground(QColor(65,60,50,50));
-    ui->lwChat->setItemWidget(listWidgetItem, _textChat);
 }
 
 void ChatWidget::on_btnSend_clicked()
 {
+    QString receiverName;
+    QString message = ui->leData->text().trimmed();
 
-    QString data = ui->leData->text().trimmed();
-    if(data == "")
+    if(message == "")
         return;
 
-    auto _textChat = new textChat();
-    _textChat->setMasseage(data, true);
-
-    QListWidgetItem *listWidgetItem = new QListWidgetItem();
-    ui->lwChat->addItem(listWidgetItem);
-    listWidgetItem->setSizeHint(QSize(0, 65));
-    listWidgetItem->setBackground(QColor(120,120,120,120));
-    ui->lwChat->setItemWidget(listWidgetItem, _textChat);
-
-    if(_socket->isOpen())
-        _socket->write(data.toUtf8());
+    if(_isServer)
+        receiverName = _socket->property("name").toString();
     else
+        receiverName = ui->cbClients->currentText();
+
+    if(!_socket->isOpen())
         qDebug() << "Error";
+    _socket->write(_protocol.setSendMessage(message, receiverName));
+
+    setMessage(message, true);
 
     ui->leData->setText("");
 }
@@ -130,13 +157,21 @@ void ChatWidget::on_leData_textChanged()
 void ChatWidget::on_leName_editingFinished()
 {
     QString name = ui->leName->text().trimmed();
-    _socket->write(_protocol.setName(name));
-    _socket->setProperty("name", name);
+
+    if(name == "")
+        return;
+
+    _socket->write(_protocol.setName(_myName ,name));
+
     ui->leName->setText("");
+
     QFile file(_openFilePath);
-    file.close();
     file.rename(name);
+    file.close();
+
     _openFilePath = QFileInfo(file).absoluteFilePath();
+    _myName = name;
+    _socket->setProperty("name", name);
 }
 
 
@@ -166,6 +201,7 @@ void ChatWidget::on_btnSendFile_clicked()
     data = file.readAll();
     _data = data;
     file.close();
+
     _socket->write(_protocol.setInitSendFile(_sendFilePath, _size));
 }
 
@@ -176,10 +212,11 @@ void ChatWidget::dataReceived(QString path, QByteArray data)
     QString name = info.fileName();
 
     QFile file(_openFilePath + QString("/%1").arg(name));
+
     if(file.open(QIODevice::WriteOnly))
         file.write(data);
     else
-        qDebug() << "Error!";
+        qDebug() << "Error";
 
     file.close();
 }
@@ -204,9 +241,57 @@ void ChatWidget::fileRejected()
     QMessageBox::warning(this, "File rejected", "The initiation for sending the file has been rejected!");
 }
 
+void ChatWidget::clientDisconnected(QString name)
+{
+    int index = ui->cbClients->findText(name);
+
+    if (index != -1)
+        ui->cbClients->removeItem(index);
+}
+
 void ChatWidget::on_lblOpen_linkActivated()
 {
     QDesktopServices::openUrl(QUrl::fromLocalFile(_openFilePath));
 }
+
+void ChatWidget::newClientReceived(QString name)
+{
+    if(name != _myName)
+        ui->cbClients->addItem(name);
+}
+
+void ChatWidget::clientNameChange(QString prevName, QString newName)
+{
+    int index = ui->cbClients->findText(prevName);
+
+    if (index != -1)
+        ui->cbClients->setItemText(index, newName);
+}
+
+void ChatWidget::setMessage(QString message, bool isMyMessage)
+{
+    auto _textChat = new textChat();
+    _textChat->setMasseage(message, isMyMessage);
+
+    QListWidgetItem *listWidgetItem = new QListWidgetItem();
+    ui->lwChat->addItem(listWidgetItem);
+    listWidgetItem->setSizeHint(QSize(0, 65));
+    QColor backgroundColor = isMyMessage ? QColor("#A3806D") : QColor("#706761");
+    listWidgetItem->setBackground(backgroundColor);
+
+    ui->lwChat->setItemWidget(listWidgetItem, _textChat);
+}
+
+void ChatWidget::loadMessage(QString message, QString receiverName)
+{
+    if(_isServer)          
+        receiverName == "Server" ? setMessage(message, false) : emit sendMessage(message, receiverName);
+    else if(receiverName == _socket->property("name").toString())
+            setMessage(message, false);
+}
+
+
+
+
 
 

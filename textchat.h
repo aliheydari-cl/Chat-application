@@ -13,8 +13,9 @@ class textChat : public QWidget
 
 public:
     explicit textChat(QWidget *parent = nullptr);
-    ~textChat();
     void setMasseage(QString message, bool isMyMessage = false);
+    ~textChat();
+
 
 private:
     Ui::textChat *ui;

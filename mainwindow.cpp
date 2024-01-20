@@ -10,7 +10,6 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
 }
 
 MainWindow::~MainWindow()
@@ -23,7 +22,10 @@ void MainWindow::on_actionServer_Mode_triggered()
     if(!isServerActive)
     {
         Server *server = new Server(this, true);
+        _server = server;
+
         connect(server, &Server::newClientConnected, this, &MainWindow::newClientConnected);
+
         ui->lblStatus->setText("Server Mod");
 
         isServerActive = true;
@@ -32,6 +34,7 @@ void MainWindow::on_actionServer_Mode_triggered()
     else
     {
         QMessageBox msgBox;
+
         msgBox.setWindowTitle("Error");
         msgBox.setText("Server is On");
         msgBox.setIcon(QMessageBox::Information);
@@ -44,7 +47,10 @@ void MainWindow::on_actionClient_mode_triggered()
     if(!isClientActive)
     {
         Server *server = new Server(this, false);
+        _server = server;
+
         connect(server, &Server::connectedToServer, this, &MainWindow::clientConnectedToServer);
+
         ui->lblStatus->setText("Client Mod");
 
         isClientActive = true;
@@ -53,6 +59,7 @@ void MainWindow::on_actionClient_mode_triggered()
     else
     {
         QMessageBox msgBox;
+
         msgBox.setWindowTitle("Error");
         msgBox.setText("Cleint is On");
         msgBox.setIcon(QMessageBox::Information);
@@ -60,13 +67,14 @@ void MainWindow::on_actionClient_mode_triggered()
     }
 }
 
-void MainWindow::OnInitSendFile(QString path, qint64 size)
+void MainWindow::onInitSendFile(QString path, qint64 size)
 {
     QString text = QString("name file: %1\n size: %2").arg(path).arg(size);;
 
     auto result = QMessageBox::question(this, "Init send file", text);
 
-    auto widget = dynamic_cast<ChatWidget*>(sender());
+    auto widget = dynamic_cast<ChatWidget *>(sender());
+
     if(result == QMessageBox::Yes)
         widget->acceptedSendFile();
     else
@@ -80,14 +88,12 @@ void MainWindow::onRejectionSendFile()
 
 void MainWindow::newClientConnected(QTcpSocket *socket) //server
 {
-    QString name = QString("Chat %1").arg(socket->property("id").toString());
-
-    socket->setProperty("name", name);
-
-    ChatWidget *chatWidget = new ChatWidget(socket, this, true);
+    ChatWidget *chatWidget = new ChatWidget(this, socket, true);
     _serverChatWidget = chatWidget;
 
-    ui->twChat->addTab(chatWidget, name);
+    chatList[socket] = chatWidget;
+
+    ui->twChat->addTab(chatWidget, socket->property("name").toString());
 
     connect(_serverChatWidget, &ChatWidget::isTyping, this, [this, socket](){
 
@@ -98,28 +104,46 @@ void MainWindow::newClientConnected(QTcpSocket *socket) //server
         this->statusBar()->showMessage(QString("%1 is typing...").arg(name), 700);
     });
 
-    connect(chatWidget, &ChatWidget::nameChanged, this, [this, socket](QString name){
-        if(name.length() < 1)
+    connect(chatWidget, &ChatWidget::nameChanged, this, [this](QString prevName, QString newName){
+
+        if(newName.length() < 1)
             return;
 
-        ui->twChat->setTabText(socket->property("id").toInt() -1, name);
+        auto widget = qobject_cast <ChatWidget *>(sender());
+        int index = ui->twChat->indexOf(widget);
+
+        ui->twChat->setTabText(index, newName);
+
+        emit clientNameChanged(prevName, newName);
     });
 
-    connect(_serverChatWidget, &ChatWidget::initSendFile, this, &MainWindow::OnInitSendFile);
+    connect(_server, &Server::sendClientDisconnected, this, [this](QTcpSocket *socket){
+        ChatWidget *widget = chatList.value(socket);
+
+        int index = ui->twChat->indexOf(widget);
+
+        ui->twChat->removeTab(index);
+        chatList.remove(socket);
+    });
+
+    connect(_serverChatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
+    connect(this, &MainWindow::clientNameChanged, _server, &Server::setChangeName);
+    connect(_serverChatWidget, &ChatWidget::sendMessage, _server, &Server::sendMessage);
 }
 
 void MainWindow::clientConnectedToServer(QTcpSocket *socket)  // client
 {
-    ChatWidget *chatWidget = new ChatWidget(socket);
+    ChatWidget *chatWidget = new ChatWidget(this, socket, false);
     _clientChatWidget = chatWidget;
 
     ui->twChat->addTab(chatWidget, QString("Server"));
 
     connect(_clientChatWidget, &ChatWidget::isTyping, this, [this](){
+
         this->statusBar()->showMessage("Server is typing...", 700);
     });
 
-    connect(_clientChatWidget, &ChatWidget::initSendFile, this, &MainWindow::OnInitSendFile);
+    connect(_clientChatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
 }
 
 
