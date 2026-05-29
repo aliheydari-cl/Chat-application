@@ -1,24 +1,16 @@
-# Chat-application
+# Chat Application
 
-- A chat application developed with Qt Widgets and C++.
-- the project is configured with the build system using qmake.
+A simple chat application made with **Qt Widgets** and **C++**.  
+This project uses **qmake** for building.
 
 ## Features
 
-- Multi-client support for connecting to a server.
-- Smooth chat experience between the server and clients, as well as among clients.
-- Real-time indication of typing status for each participant.
-- Effortless file transfer between the server and clients, accommodating files up to 85 kilobytes.
+- More than one client can connect to the server.
+- Users can chat with the server and with other clients.
+- Shows typing status in real time.
+- Supports file transfer up to **85 KB**.
 
-## Building
 
-```
-cd build
-qmake ..
-make
-./TcpServer
-
-```
 ## Demo
 
 ![chatApplication](image/chatApplication.png)
