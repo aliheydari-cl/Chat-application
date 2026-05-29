@@ -30,14 +30,14 @@ private slots:
     void clientConnectedToServer();
 
 private:
-    QMap<QString, QTcpSocket *> _socketList;
-    bool _isServer = false;
+    QMap<QString, QTcpSocket *> socketList;
+    bool isServer = false;
 
-    QTcpServer *_server;
-    ushort _port;
-    textChat *_textChat;
-    protocol _protocol;
-    QTcpSocket *_socket;
+    QTcpServer *server;
+    ushort port;
+    textChat *textChat;
+    Protocol protocol;
+    QTcpSocket *socket;
 };
 
 #endif // SERVER_H

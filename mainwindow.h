@@ -35,13 +35,12 @@ signals:
 
 private:
     Ui::MainWindow *ui;
-    ChatWidget *_clientChatWidget;
-    ChatWidget *_serverChatWidget;
+    ChatWidget *clientChatWidget;
 
     bool isServerActive = false;
     bool isClientActive = false;
 
-    Server *_server;
+    Server *server;
 
     QMap<QTcpSocket *, ChatWidget *> chatList;
 

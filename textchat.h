@@ -12,8 +12,7 @@ class textChat : public QWidget
     Q_OBJECT
 
 public:
-    explicit textChat(QWidget *parent = nullptr);
-    void setMasseage(QString message, bool isMyMessage = false);
+    explicit textChat(QWidget *parent = nullptr, const QString &message = "", const bool &isMyMessage = false);
     ~textChat();
 
 

@@ -4,11 +4,11 @@
 #include <QObject>
 #include <QTcpSocket>
 
-class protocol : public QObject
+class Protocol : public QObject
 {
     Q_OBJECT
 public:
-    explicit protocol(QObject *parent = nullptr);
+    explicit Protocol(QObject *parent = nullptr);
 
     enum type{
         sendInformation,
@@ -25,19 +25,22 @@ public:
     };
 
     type getType() const;
+
     void setType(type newType);
     void deleteType();
 
-    QString name() const;
-    QString path() const;
+    QString getName() const;
+    QString getPath() const;
     QString getMessage() const;
-    QString prevName() const;
-    QString newName() const;
-    QStringList list() const;
-    QString receiverName() const;
-    QString senderName() const;
-    qint64 size() const;
-    QByteArray data() const;
+    QString getPrevName() const;
+    QString getNewName() const;
+    QStringList getList() const;
+    QString getReceiverName() const;
+    QString getSenderName() const;
+
+    qint64 getSize() const;
+
+    QByteArray getData() const;
 
 public slots:
     QByteArray setSendInformation(QString name, QStringList list) ;
@@ -57,18 +60,19 @@ public slots:
 signals:
 
 private:
+    QString name;
+    QString _message;
+    QString prevName;
+    QString newName;
+    QStringList list;
+    QString receiverName;
+    QString senderName;
+    QString path;
+
     type _type;
 
-    QString _name;
-    QString _message;
-    QString _prevName;
-    QString _newName;
-    QStringList _list;
-    QString _receiverName;
-    QString _senderName;
-    QString _path;
-    qint64 _size;
-    QByteArray _data;
+    qint64 size;
+    QByteArray data;
 };
 
 #endif // PROTOCOL_H

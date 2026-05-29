@@ -52,14 +52,20 @@ private slots:
 
 private:  
     Ui::ChatWidget *ui;
-    QString _myName;
-    bool _isServer;
-    QTcpSocket *_socket;
-    protocol _protocol;
-    QString _sendFilePath;
-    QString _openFilePath;
-    qint64 _size;
-    QByteArray _data;
+
+    QString myName;
+    QString sendFilePath;
+    QString openFilePath;
+
+    qint64 size;
+
+    bool isServer;
+
+    QTcpSocket *socket;
+
+    Protocol protocol;
+
+    QByteArray data;
 };
 
 #endif // CHATWIDGET_H

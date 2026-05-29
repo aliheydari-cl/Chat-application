@@ -9,10 +9,11 @@
 ChatWidget::ChatWidget(QWidget *parent, QTcpSocket *socket, bool isServer)
     : QWidget(parent)
     , ui(new Ui::ChatWidget)
-    , _isServer(isServer)
-    , _socket(socket)
+    , isServer(isServer)
+    , socket(socket)
 {
     ui->setupUi(this);
+
     if(isServer)
     {
         ui->nameFrame->deleteLater();
@@ -21,12 +22,12 @@ ChatWidget::ChatWidget(QWidget *parent, QTcpSocket *socket, bool isServer)
         QDir dir;
         QString path = QDir::currentPath() + "/Server";
         dir.mkdir(path);
-        _openFilePath = path;
+        openFilePath = path;
 
-        _myName = "Server";
+        myName = "Server";
     }
 
-    connect(_socket, &QTcpSocket::readyRead, this, &ChatWidget::redyRead);
+    connect(socket, &QTcpSocket::readyRead, this, &ChatWidget::redyRead);
 }
 
 ChatWidget::~ChatWidget()
@@ -42,14 +43,14 @@ void ChatWidget::setInformation(QString name, QStringList list)
 
     dir.mkdir(path);
 
-    _openFilePath = path;
-    _myName = name;
-    _socket->setProperty("name", name);
+    openFilePath = path;
+    myName = name;
+    socket->setProperty("name", name);
 
     ui->cbClients->addItem("Server");
 
     foreach (QString var, list) {
-        if(var != _myName)
+        if(var != myName)
             ui->cbClients->addItem(var);
     }
 }
@@ -57,67 +58,67 @@ void ChatWidget::setInformation(QString name, QStringList list)
 
 void ChatWidget::redyRead()
 {
-    QByteArray const data = _socket->readAll();
+    QByteArray const data = socket->readAll();
 
-    _protocol.loadData(data);
+    protocol.loadData(data);
 
-    switch (_protocol.getType()) {
-    case protocol::sendInformation:
+    switch (protocol.getType()) {
+    case Protocol::sendInformation:
     {
-        setInformation(_protocol.name(), _protocol.list());
-        _socket->setProperty("name", _protocol.name());
+        setInformation(protocol.getName(), protocol.getList());
+        socket->setProperty("name", protocol.getName());
         break;
     }
 
-    case protocol::message:
-        loadMessage(_protocol.getMessage(), _protocol.receiverName());
+    case Protocol::message:
+        loadMessage(protocol.getMessage(), protocol.getReceiverName());
         break;
 
-    case protocol::isTyping:
+    case Protocol::isTyping:
         emit isTyping();
         break;
 
-    case protocol::nameChange:
+    case Protocol::nameChange:
     {
-        emit nameChanged(_protocol.prevName(), _protocol.newName());
-        if(_isServer)
-            _socket->setProperty("name", _protocol.newName());
+        emit nameChanged(protocol.getPrevName(), protocol.getNewName());
+        if(isServer)
+            socket->setProperty("name", protocol.getNewName());
         break;
     }
 
-    case protocol::initSendFile:
-        emit initSendFile(_protocol.path(), _protocol.size());
+    case Protocol::initSendFile:
+        emit initSendFile(protocol.getPath(), protocol.getSize());
 
         break;
 
-    case protocol::sendFile:
-        dataReceived(_protocol.path(), _protocol.data());
+    case Protocol::sendFile:
+        dataReceived(protocol.getPath(), protocol.getData());
 
         break;
 
-    case protocol::sendRejectionFile:
+    case Protocol::sendRejectionFile:
         fileRejected();
 
         break;
 
-    case protocol::acceptedSendFile:
+    case Protocol::acceptedSendFile:
         sendFile();
 
         break;
 
-    case protocol::sendNewClient:
-        newClientReceived(_protocol.name());
+    case Protocol::sendNewClient:
+        newClientReceived(protocol.getName());
 
         break;
 
-    case protocol::sendDisconnectClient:
-        clientDisconnected(_protocol.name());
+    case Protocol::sendDisconnectClient:
+        clientDisconnected(protocol.getName());
 
         break;
 
-    case protocol::sendNameChangeClient:
+    case Protocol::sendNameChangeClient:
 
-        clientNameChange(_protocol.prevName(), _protocol.newName());
+        clientNameChange(protocol.getPrevName(), protocol.getNewName());
 
         break;
 
@@ -135,14 +136,14 @@ void ChatWidget::on_btnSend_clicked()
     if(message == "")
         return;
 
-    if(_isServer)
-        receiverName = _socket->property("name").toString();
+    if(isServer)
+        receiverName = socket->property("name").toString();
     else
         receiverName = ui->cbClients->currentText();
 
-    if(!_socket->isOpen())
+    if(!socket->isOpen())
         qDebug() << "Error";
-    _socket->write(_protocol.setSendMessage(message, receiverName));
+    socket->write(protocol.setSendMessage(message, receiverName));
 
     setMessage(message, true);
 
@@ -151,7 +152,7 @@ void ChatWidget::on_btnSend_clicked()
 
 void ChatWidget::on_leData_textChanged()
 {
-    _socket->write(_protocol.setStatus());
+    socket->write(protocol.setStatus());
 }
 
 void ChatWidget::on_leName_editingFinished()
@@ -161,17 +162,17 @@ void ChatWidget::on_leName_editingFinished()
     if(name == "")
         return;
 
-    _socket->write(_protocol.setName(_myName ,name));
+    socket->write(protocol.setName(myName ,name));
 
     ui->leName->setText("");
 
-    QFile file(_openFilePath);
+    QFile file(openFilePath);
     file.rename(name);
     file.close();
 
-    _openFilePath = QFileInfo(file).absoluteFilePath();
-    _myName = name;
-    _socket->setProperty("name", name);
+    openFilePath = QFileInfo(file).absoluteFilePath();
+    myName = name;
+    socket->setProperty("name", name);
 }
 
 
@@ -186,23 +187,19 @@ void ChatWidget::on_btnSendFile_clicked()
     if(nameFile.length() < 1)
         return;
     QFileInfo info(nameFile);
-    qint64 size = info.size();
-    _size = size;
+    size = info.size();
 
-    _sendFilePath = nameFile;
+    sendFilePath = nameFile;
 
-    QByteArray data;
-
-    QFile file(_sendFilePath);
+    QFile file(sendFilePath);
 
     if(!file.open(QIODevice::ReadOnly))
         qDebug() << "Error";
 
     data = file.readAll();
-    _data = data;
     file.close();
 
-    _socket->write(_protocol.setInitSendFile(_sendFilePath, _size));
+    socket->write(protocol.setInitSendFile(sendFilePath, size));
 }
 
 void ChatWidget::dataReceived(QString path, QByteArray data)
@@ -211,7 +208,7 @@ void ChatWidget::dataReceived(QString path, QByteArray data)
 
     QString name = info.fileName();
 
-    QFile file(_openFilePath + QString("/%1").arg(name));
+    QFile file(openFilePath + QString("/%1").arg(name));
 
     if(file.open(QIODevice::WriteOnly))
         file.write(data);
@@ -223,17 +220,17 @@ void ChatWidget::dataReceived(QString path, QByteArray data)
 
 void ChatWidget::sendFile()
 {
-    _socket->write(_protocol.setSendFile(_sendFilePath, _size, _data));
+    socket->write(protocol.setSendFile(sendFilePath, size, data));
 }
 
 void ChatWidget::acceptedSendFile()
 {
-    _socket->write(_protocol.setAcceptedSendFile());
+    socket->write(protocol.setAcceptedSendFile());
 }
 
 void ChatWidget::setFileRejected()
 {
-    _socket->write(_protocol.setSendRejectionFile());
+    socket->write(protocol.setSendRejectionFile());
 }
 
 void ChatWidget::fileRejected()
@@ -251,12 +248,12 @@ void ChatWidget::clientDisconnected(QString name)
 
 void ChatWidget::on_lblOpen_linkActivated()
 {
-    QDesktopServices::openUrl(QUrl::fromLocalFile(_openFilePath));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(openFilePath));
 }
 
 void ChatWidget::newClientReceived(QString name)
 {
-    if(name != _myName)
+    if(name != myName)
         ui->cbClients->addItem(name);
 }
 
@@ -270,8 +267,7 @@ void ChatWidget::clientNameChange(QString prevName, QString newName)
 
 void ChatWidget::setMessage(QString message, bool isMyMessage)
 {
-    auto _textChat = new textChat();
-    _textChat->setMasseage(message, isMyMessage);
+    auto _textChat = new textChat(this, message, isMyMessage);
 
     QListWidgetItem *listWidgetItem = new QListWidgetItem();
     ui->lwChat->addItem(listWidgetItem);
@@ -284,9 +280,9 @@ void ChatWidget::setMessage(QString message, bool isMyMessage)
 
 void ChatWidget::loadMessage(QString message, QString receiverName)
 {
-    if(_isServer)          
+    if(isServer)
         receiverName == "Server" ? setMessage(message, false) : emit sendMessage(message, receiverName);
-    else if(receiverName == _socket->property("name").toString())
+    else if(receiverName == socket->property("name").toString())
             setMessage(message, false);
 }
 

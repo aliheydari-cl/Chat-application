@@ -5,13 +5,11 @@
 #include <QDir>
 #include <QIODevice>
 
-protocol::protocol(QObject *parent)
+Protocol::Protocol(QObject *parent)
     : QObject{parent}
-{
+{}
 
-}
-
-QByteArray protocol::setStatus()
+QByteArray Protocol::setStatus()
 {
     QByteArray ba;
 
@@ -22,9 +20,9 @@ QByteArray protocol::setStatus()
     return ba;
 }
 
-QByteArray protocol::setName(QString prevName, QString newName)
+QByteArray Protocol::setName(QString prevName, QString newName)
 {
-    this->_name = newName;
+    this->name = newName;
 
     QByteArray ba;
     QDataStream out(&ba, QIODevice::WriteOnly);
@@ -34,7 +32,7 @@ QByteArray protocol::setName(QString prevName, QString newName)
     return ba;
 }
 
-QByteArray protocol::setInitSendFile(QString clientName, qint64 size)
+QByteArray Protocol::setInitSendFile(QString clientName, qint64 size)
 {
     QByteArray ba;
 
@@ -45,7 +43,7 @@ QByteArray protocol::setInitSendFile(QString clientName, qint64 size)
     return ba;
 }
 
-QByteArray protocol::setSendRejectionFile()
+QByteArray Protocol::setSendRejectionFile()
 {
     QByteArray ba;
 
@@ -56,7 +54,7 @@ QByteArray protocol::setSendRejectionFile()
     return ba;
 }
 
-QByteArray protocol::setSendFile(QString path, qint64 size, QByteArray data)
+QByteArray Protocol::setSendFile(QString path, qint64 size, QByteArray data)
 {
     QByteArray ba;
 
@@ -67,7 +65,7 @@ QByteArray protocol::setSendFile(QString path, qint64 size, QByteArray data)
     return ba;
 }
 
-QByteArray protocol::setAcceptedSendFile()
+QByteArray Protocol::setAcceptedSendFile()
 {
     QByteArray ba;
 
@@ -79,7 +77,7 @@ QByteArray protocol::setAcceptedSendFile()
 
 }
 
-QByteArray protocol::setSendNewClient(QString name)
+QByteArray Protocol::setSendNewClient(QString name)
 {
     QByteArray ba;
 
@@ -91,7 +89,7 @@ QByteArray protocol::setSendNewClient(QString name)
 
 }
 
-QByteArray protocol::setSendDisconnectClient(QString name)
+QByteArray Protocol::setSendDisconnectClient(QString name)
 {
     QByteArray ba;
 
@@ -103,7 +101,7 @@ QByteArray protocol::setSendDisconnectClient(QString name)
 
 }
 
-QByteArray protocol::setSendNameChange(QString prevName, QString newName)
+QByteArray Protocol::setSendNameChange(QString prevName, QString newName)
 {
     QByteArray ba;
 
@@ -114,7 +112,7 @@ QByteArray protocol::setSendNameChange(QString prevName, QString newName)
     return ba;
 
 }
-QByteArray protocol::setSendMessage(QString msg, QString receiverName)
+QByteArray Protocol::setSendMessage(QString msg, QString receiverName)
 {
     QByteArray ba;
 
@@ -125,37 +123,37 @@ QByteArray protocol::setSendMessage(QString msg, QString receiverName)
     return ba;
 }
 
-void protocol::loadData(QByteArray data)
+void Protocol::loadData(QByteArray data)
 {
     QDataStream in(&data, QIODevice::ReadOnly);
     in >> _type;
 
     switch (_type) {
     case sendInformation:
-        in >> _name >> _list;
+        in >> name >> list;
 
         break;
 
     case message:
-        in >> _message >> _receiverName >> _senderName;
+        in >> _message >> receiverName >> senderName;
 
         break;
 
     case nameChange:
-        in >> _prevName >> _newName;
+        in >> prevName >> newName;
 
         break;
 
     case initSendFile:
-        in >> _path;
-        in >> _size;
+        in >> path;
+        in >> size;
 
         break;
 
     case sendFile:
-        in >> _path;
-        in >> _size;
-        in >> _data;
+        in >> path;
+        in >> size;
+        in >> data;
 
         break;
 
@@ -168,17 +166,17 @@ void protocol::loadData(QByteArray data)
         break;
 
     case sendNewClient:
-        in >> _name;
+        in >> name;
 
         break;
 
     case sendDisconnectClient:
-        in >> _name;
+        in >> name;
 
         break;
 
     case sendNameChangeClient:
-        in >> _prevName >> _newName;
+        in >> prevName >> newName;
 
         break;
 
@@ -188,7 +186,7 @@ void protocol::loadData(QByteArray data)
     }
 }
 
-QByteArray protocol::setSendInformation(QString name, QStringList list)
+QByteArray Protocol::setSendInformation(QString name, QStringList list)
 {
     QByteArray ba;
 
@@ -200,63 +198,63 @@ QByteArray protocol::setSendInformation(QString name, QStringList list)
 }
 
 
-QByteArray protocol::data() const
+QByteArray Protocol::getData() const
 {
-    return _data;
+    return data;
 }
 
-qint64 protocol::size() const
+qint64 Protocol::getSize() const
 {
-    return _size;
+    return size;
 }
 
-QString protocol::path() const
+QString Protocol::getPath() const
 {
-    return _path;
+    return path;
 }
 
-QString protocol::name() const
+QString Protocol::getName() const
 {
-    return _name;
+    return name;
 }
 
-QString protocol::senderName() const
+QString Protocol::getSenderName() const
 {
-    return _senderName;
+    return senderName;
 }
 
-QString protocol::receiverName() const
+QString Protocol::getReceiverName() const
 {
-    return _receiverName;
+    return receiverName;
 }
 
-QStringList protocol::list() const
+QStringList Protocol::getList() const
 {
-    return _list;
+    return list;
 }
 
-QString protocol::newName() const
+QString Protocol::getNewName() const
 {
-    return _newName;
+    return newName;
 }
 
-QString protocol::prevName() const
+QString Protocol::getPrevName() const
 {
-    return _prevName;
+    return prevName;
 }
 
-QString protocol::getMessage() const
+QString Protocol::getMessage() const
 {
     return _message;
 }
 
 
-protocol::type protocol::getType() const
+Protocol::type Protocol::getType() const
 {
     return _type;
 }
 
-void protocol::setType(type newType)
+void Protocol::setType(type newType)
 {
     _type = newType;
 }

@@ -21,8 +21,7 @@ void MainWindow::on_actionServer_Mode_triggered()
 {
     if(!isServerActive)
     {
-        Server *server = new Server(this, true);
-        _server = server;
+        server = new Server(this, true);
 
         connect(server, &Server::newClientConnected, this, &MainWindow::newClientConnected);
 
@@ -46,8 +45,7 @@ void MainWindow::on_actionClient_mode_triggered()
 {
     if(!isClientActive)
     {
-        Server *server = new Server(this, false);
-        _server = server;
+        server = new Server(this, false);
 
         connect(server, &Server::connectedToServer, this, &MainWindow::clientConnectedToServer);
 
@@ -89,13 +87,12 @@ void MainWindow::onRejectionSendFile()
 void MainWindow::newClientConnected(QTcpSocket *socket) //server
 {
     ChatWidget *chatWidget = new ChatWidget(this, socket, true);
-    _serverChatWidget = chatWidget;
 
     chatList[socket] = chatWidget;
 
     ui->twChat->addTab(chatWidget, socket->property("name").toString());
 
-    connect(_serverChatWidget, &ChatWidget::isTyping, this, [this, socket](){
+    connect(chatWidget, &ChatWidget::isTyping, this, [this, socket](){
 
         QString name = socket->property("name").toString();
         if(name.length() < 1)
@@ -117,7 +114,7 @@ void MainWindow::newClientConnected(QTcpSocket *socket) //server
         emit clientNameChanged(prevName, newName);
     });
 
-    connect(_server, &Server::sendClientDisconnected, this, [this](QTcpSocket *socket){
+    connect(server, &Server::sendClientDisconnected, this, [this](QTcpSocket *socket){
         ChatWidget *widget = chatList.value(socket);
 
         int index = ui->twChat->indexOf(widget);
@@ -126,24 +123,24 @@ void MainWindow::newClientConnected(QTcpSocket *socket) //server
         chatList.remove(socket);
     });
 
-    connect(_serverChatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
-    connect(this, &MainWindow::clientNameChanged, _server, &Server::setChangeName);
-    connect(_serverChatWidget, &ChatWidget::sendMessage, _server, &Server::sendMessage);
+    connect(chatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
+    connect(this, &MainWindow::clientNameChanged, server, &Server::setChangeName);
+    connect(chatWidget, &ChatWidget::sendMessage, server, &Server::sendMessage);
 }
 
 void MainWindow::clientConnectedToServer(QTcpSocket *socket)  // client
 {
     ChatWidget *chatWidget = new ChatWidget(this, socket, false);
-    _clientChatWidget = chatWidget;
+    clientChatWidget = chatWidget;
 
     ui->twChat->addTab(chatWidget, QString("Server"));
 
-    connect(_clientChatWidget, &ChatWidget::isTyping, this, [this](){
+    connect(clientChatWidget, &ChatWidget::isTyping, this, [this](){
 
         this->statusBar()->showMessage("Server is typing...", 700);
     });
 
-    connect(_clientChatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
+    connect(clientChatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
 }
 
 

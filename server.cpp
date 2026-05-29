@@ -4,19 +4,19 @@
 
 Server::Server(QObject *parent, bool isServer)
     : QObject{parent},
-    _isServer(isServer)
+    isServer(isServer)
 {
-    _server = nullptr;
+    server = nullptr;
 
-    if(_isServer)
+    if(isServer)
         setUpServer();
-    else if(!_isServer)
+    else if(!isServer)
         setUpClient();
 }
 
 void Server::setUpServer()
 {
-    QTcpServer *server = new QTcpServer();
+    server = new QTcpServer();
     server->listen(QHostAddress::Any, 6000);
 
     connect(server, &QTcpServer::newConnection, this, &Server::newConection);
@@ -32,50 +32,47 @@ void Server::setUpClient()
 
 void Server::sendMessage(QString message, QString receiverName)
 {
-    QTcpSocket *socket = _socketList.value(receiverName, nullptr);
+    QTcpSocket *socket = socketList.value(receiverName, nullptr);
 
     if (socket != nullptr)
-        socket->write(_protocol.setSendMessage(message, receiverName));
+        socket->write(protocol.setSendMessage(message, receiverName));
 }
 
 void Server::newConection()
 {
-    auto server = qobject_cast<QTcpServer *>(sender());
-    auto client = server->nextPendingConnection();
-    connect(client, &QTcpSocket::disconnected, this, &Server::clientDisconnected);
+    socket = server->nextPendingConnection();
+    connect(socket, &QTcpSocket::disconnected, this, &Server::clientDisconnected);
 
-    _socket = client;
+    auto id = socketList.count();
 
-    auto id = _socketList.count();
+    socket->setProperty("id", ++id);
 
-    client->setProperty("id", ++id);
+    QString name = QString("Chat %1").arg(socket->property("id").toString());
 
-    QString name = QString("Chat %1").arg(client->property("id").toString());
+    socket->setProperty("name", name);
 
-    _socket->setProperty("name", name);
+    socketList[name] = socket;
 
-    _socketList[name] = client;
+    socket->write(protocol.setSendInformation(name, socketList.keys()));
 
-    client->write(_protocol.setSendInformation(name, _socketList.keys()));
-
-    foreach (QTcpSocket *socket, _socketList.values()) {
-        if(socket != client)
-            socket->write(_protocol.setSendNewClient(client->property("name").toString()));
+    foreach (QTcpSocket *s, socketList.values()) {
+        if(s != socket)
+            socket->write(protocol.setSendNewClient(socket->property("name").toString()));
     }
 
-    emit newClientConnected(client);
+    emit newClientConnected(socket);
 }
 
 void Server::clientDisconnected()
 {
     auto _socket = qobject_cast<QTcpSocket *>(sender());
 
-    _socketList.remove(_socket->property("name").toString());
+    socketList.remove(_socket->property("name").toString());
 
-    foreach (QTcpSocket *socket, _socketList.values())
+    foreach (QTcpSocket *socket, socketList.values())
     {
         if(socket != _socket)
-            socket->write(_protocol.setSendDisconnectClient(_socket->property("name").toString()));
+            socket->write(protocol.setSendDisconnectClient(_socket->property("name").toString()));
     }
     emit sendClientDisconnected(_socket);
 }
@@ -89,35 +86,24 @@ void Server::clientConnectedToServer()
 
 void Server::setChangeName(QString prevName, QString newName)
 {
-    QTcpSocket *_socket = _socketList.value(prevName, nullptr);
+    QTcpSocket *_socket = socketList.value(prevName, nullptr);
     if (_socket) {
-        QStringList keys = _socketList.keys();
+        QStringList keys = socketList.keys();
         int index = keys.indexOf(prevName);
 
         if (index != -1)
             keys.replace(index, newName);       
 
-        _socketList.remove(prevName);
-        _socketList.insert(newName, _socket);
+        socketList.remove(prevName);
+        socketList.insert(newName, _socket);
     }
 
-    foreach (QTcpSocket *socket, _socketList.values())
+    foreach (QTcpSocket *socket, socketList.values())
     {
         if(socket != _socket)
-            socket->write(_protocol.setSendNameChange(prevName, newName));
+            socket->write(protocol.setSendNameChange(prevName, newName));
     }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
