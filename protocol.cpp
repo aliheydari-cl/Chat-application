@@ -112,6 +112,18 @@ QByteArray Protocol::setSendNameChange(QString prevName, QString newName)
     return ba;
 
 }
+
+QByteArray Protocol::setSendNameChangeRejected()
+{
+    QByteArray ba;
+
+    QDataStream out(&ba, QIODevice::WriteOnly);
+
+    out << sendNameChangeRejected;
+
+    return ba;
+
+}
 QByteArray Protocol::setSendMessage(QString msg, QString receiverName)
 {
     QByteArray ba;
@@ -123,9 +135,9 @@ QByteArray Protocol::setSendMessage(QString msg, QString receiverName)
     return ba;
 }
 
-void Protocol::loadData(QByteArray data)
+void Protocol::loadData(QByteArray rawData)
 {
-    QDataStream in(&data, QIODevice::ReadOnly);
+    QDataStream in(&rawData, QIODevice::ReadOnly);
     in >> _type;
 
     switch (_type) {
@@ -179,6 +191,11 @@ void Protocol::loadData(QByteArray data)
         in >> prevName >> newName;
 
         break;
+
+    case sendNameChangeRejected:
+
+        break;
+
 
     default:
 

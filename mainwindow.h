@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <server.h>
 #include <chatwidget.h>
+#include <clientmanager.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,6 +42,7 @@ private:
     bool isClientActive = false;
 
     Server *server;
+    ClientManager* clientManager;
 
     QMap<QTcpSocket *, ChatWidget *> chatList;
 

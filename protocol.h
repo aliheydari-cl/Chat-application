@@ -22,6 +22,7 @@ public:
         sendNewClient,
         sendDisconnectClient,
         sendNameChangeClient,
+        sendNameChangeRejected
     };
 
     type getType() const;
@@ -54,8 +55,10 @@ public slots:
     QByteArray setSendNewClient(QString name);
     QByteArray setSendDisconnectClient(QString name);
     QByteArray setSendNameChange(QString prevName, QString newName);
+    QByteArray setSendNameChangeRejected();
 
-    void loadData(QByteArray data);
+
+    void loadData(QByteArray rawData);
 
 signals:
 

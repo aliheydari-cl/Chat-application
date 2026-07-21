@@ -5,6 +5,7 @@
 #include <QListWidgetItem>
 #include <QDesktopServices>
 #include <QMessageBox>
+#include <networkutils.h>
 
 ChatWidget::ChatWidget(QWidget *parent, QTcpSocket *socket, bool isServer)
     : QWidget(parent)
@@ -55,76 +56,96 @@ void ChatWidget::setInformation(QString name, QStringList list)
     }
 }
 
-
 void ChatWidget::redyRead()
 {
-    QByteArray const data = socket->readAll();
+    buffer.append(socket->readAll());
 
-    protocol.loadData(data);
-
-    switch (protocol.getType()) {
-    case Protocol::sendInformation:
+    while(true)
     {
-        setInformation(protocol.getName(), protocol.getList());
-        socket->setProperty("name", protocol.getName());
-        break;
-    }
+        QDataStream in(buffer);
+        in.startTransaction();
 
-    case Protocol::message:
-        loadMessage(protocol.getMessage(), protocol.getReceiverName());
-        break;
+        QByteArray oneMessage;
+        in >> oneMessage;
 
-    case Protocol::isTyping:
-        emit isTyping();
-        break;
+        if(!in.commitTransaction())
+            return;
 
-    case Protocol::nameChange:
-    {
-        emit nameChanged(protocol.getPrevName(), protocol.getNewName());
-        if(isServer)
-            socket->setProperty("name", protocol.getNewName());
-        break;
-    }
+        buffer.remove(0,in.device()->pos());
 
-    case Protocol::initSendFile:
-        emit initSendFile(protocol.getPath(), protocol.getSize());
 
-        break;
+        protocol.loadData(oneMessage);
 
-    case Protocol::sendFile:
-        dataReceived(protocol.getPath(), protocol.getData());
+        switch (protocol.getType()) {
+        case Protocol::sendInformation:
+        {
+            setInformation(protocol.getName(), protocol.getList());
+            socket->setProperty("name", protocol.getName());
+            break;
+        }
 
-        break;
+        case Protocol::message:
+            loadMessage(protocol.getMessage(), protocol.getReceiverName());
+            break;
 
-    case Protocol::sendRejectionFile:
-        fileRejected();
+        case Protocol::isTyping:
+            emit isTyping();
+            break;
 
-        break;
+        case Protocol::nameChange:
+        {
+            emit nameChanged(protocol.getPrevName(), protocol.getNewName());
+            if(isServer)
+                socket->setProperty("name", protocol.getNewName());
+            break;
+        }
 
-    case Protocol::acceptedSendFile:
-        sendFile();
+        case Protocol::initSendFile:
+            emit initSendFile(protocol.getPath(), protocol.getSize());
 
-        break;
+            break;
 
-    case Protocol::sendNewClient:
-        newClientReceived(protocol.getName());
+        case Protocol::sendFile:
+            dataReceived(protocol.getPath(), protocol.getData());
 
-        break;
+            break;
 
-    case Protocol::sendDisconnectClient:
-        clientDisconnected(protocol.getName());
+        case Protocol::sendRejectionFile:
+            fileRejected();
 
-        break;
+            break;
 
-    case Protocol::sendNameChangeClient:
+        case Protocol::acceptedSendFile:
+            sendFile();
 
-        clientNameChange(protocol.getPrevName(), protocol.getNewName());
+            break;
 
-        break;
+        case Protocol::sendNewClient:
+            newClientReceived(protocol.getName());
 
-    default:
-        break;
+            break;
 
+        case Protocol::sendDisconnectClient:
+            clientDisconnected(protocol.getName());
+
+            break;
+
+        case Protocol::sendNameChangeClient:
+
+            clientNameChange(protocol.getPrevName(), protocol.getNewName());
+
+            break;
+
+        case Protocol::sendNameChangeRejected:
+
+            clientNameChangeRejected();
+
+            break;
+
+        default:
+            break;
+
+        }
     }
 }
 
@@ -143,7 +164,8 @@ void ChatWidget::on_btnSend_clicked()
 
     if(!socket->isOpen())
         qDebug() << "Error";
-    socket->write(protocol.setSendMessage(message, receiverName));
+
+    sendPacket(socket, protocol.setSendMessage(message, receiverName));
 
     setMessage(message, true);
 
@@ -152,7 +174,7 @@ void ChatWidget::on_btnSend_clicked()
 
 void ChatWidget::on_leData_textChanged()
 {
-    socket->write(protocol.setStatus());
+    sendPacket(socket, protocol.setStatus());
 }
 
 void ChatWidget::on_leName_editingFinished()
@@ -162,7 +184,7 @@ void ChatWidget::on_leName_editingFinished()
     if(name == "")
         return;
 
-    socket->write(protocol.setName(myName ,name));
+    sendPacket(socket, protocol.setName(myName ,name));
 
     ui->leName->setText("");
 
@@ -174,7 +196,6 @@ void ChatWidget::on_leName_editingFinished()
     myName = name;
     socket->setProperty("name", name);
 }
-
 
 void ChatWidget::on_leData_editingFinished()
 {
@@ -199,7 +220,7 @@ void ChatWidget::on_btnSendFile_clicked()
     data = file.readAll();
     file.close();
 
-    socket->write(protocol.setInitSendFile(sendFilePath, size));
+    sendPacket(socket, protocol.setInitSendFile(sendFilePath, size));
 }
 
 void ChatWidget::dataReceived(QString path, QByteArray data)
@@ -220,17 +241,18 @@ void ChatWidget::dataReceived(QString path, QByteArray data)
 
 void ChatWidget::sendFile()
 {
-    socket->write(protocol.setSendFile(sendFilePath, size, data));
+    sendPacket(socket, protocol.setSendFile(sendFilePath, size, data));
 }
 
 void ChatWidget::acceptedSendFile()
 {
-    socket->write(protocol.setAcceptedSendFile());
+    sendPacket(socket, protocol.setAcceptedSendFile());
+
 }
 
 void ChatWidget::setFileRejected()
 {
-    socket->write(protocol.setSendRejectionFile());
+    sendPacket(socket, protocol.setSendRejectionFile());
 }
 
 void ChatWidget::fileRejected()
@@ -265,6 +287,11 @@ void ChatWidget::clientNameChange(QString prevName, QString newName)
         ui->cbClients->setItemText(index, newName);
 }
 
+void ChatWidget::clientNameChangeRejected()
+{
+    QMessageBox::warning(this, "Rename failed", "This name is already taken.");
+}
+
 void ChatWidget::setMessage(QString message, bool isMyMessage)
 {
     auto _textChat = new textChat(this, message, isMyMessage);
@@ -283,7 +310,7 @@ void ChatWidget::loadMessage(QString message, QString receiverName)
     if(isServer)
         receiverName == "Server" ? setMessage(message, false) : emit sendMessage(message, receiverName);
     else if(receiverName == socket->property("name").toString())
-            setMessage(message, false);
+        setMessage(message, false);
 }
 
 

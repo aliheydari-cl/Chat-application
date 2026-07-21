@@ -25,9 +25,11 @@ public slots:
     void setFileRejected();
     void setInformation(QString name, QStringList list);
     void newClientReceived(QString name);
-    void clientNameChange(QString prevName, QString newName);
     void loadMessage(QString message, QString receiverName);
     void setMessage(QString message, bool isMyMessage = false);
+    void clientNameChange(QString prevName, QString newName);
+    void clientNameChangeRejected();
+
 
 
 signals:
@@ -56,6 +58,7 @@ private:
     QString myName;
     QString sendFilePath;
     QString openFilePath;
+    QByteArray buffer;
 
     qint64 size;
 

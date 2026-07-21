@@ -11,23 +11,20 @@ class Server : public QObject
 {
     Q_OBJECT
 public:
-    explicit Server(QObject *parent = nullptr, bool isServer = false);
-    void setUpServer();
-    void setUpClient();
-    void setChangeName(QString prevName, QString newName);
+    explicit Server(QObject *parent = nullptr);
+    bool setChangeName(QString prevName, QString newName);
+    void sendNameChangeRejected(QTcpSocket *socket);
 
 public slots:
     void sendMessage(QString message, QString receiverName);
 
 signals:
     void newClientConnected(QTcpSocket *client);
-    void connectedToServer(QTcpSocket *client);
     void sendClientDisconnected(QTcpSocket *);
 
 private slots:
     void newConection();
     void clientDisconnected();
-    void clientConnectedToServer();
 
 private:
     QMap<QString, QTcpSocket *> socketList;
@@ -37,7 +34,8 @@ private:
     ushort port;
     textChat *textChat;
     Protocol protocol;
-    QTcpSocket *socket;
+    //QTcpSocket *socket;
+    int nextId = 0;
 };
 
 #endif // SERVER_H

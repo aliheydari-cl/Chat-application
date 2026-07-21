@@ -6,6 +6,7 @@ CONFIG += c++17
 
 SOURCES += \
     chatwidget.cpp \
+    clientmanager.cpp \
     main.cpp \
     mainwindow.cpp \
     protocol.cpp \
@@ -14,7 +15,9 @@ SOURCES += \
 
 HEADERS += \
     chatwidget.h \
+    clientmanager.h \
     mainwindow.h \
+    networkutils.h \
     protocol.h \
     server.h \
     textchat.h

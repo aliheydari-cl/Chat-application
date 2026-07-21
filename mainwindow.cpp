@@ -21,9 +21,23 @@ void MainWindow::on_actionServer_Mode_triggered()
 {
     if(!isServerActive)
     {
-        server = new Server(this, true);
+        server = new Server(this);
 
         connect(server, &Server::newClientConnected, this, &MainWindow::newClientConnected);
+        connect(this, &MainWindow::clientNameChanged, server, &Server::setChangeName);
+        connect(server, &Server::sendClientDisconnected, this, [this](QTcpSocket *socket){
+            ChatWidget *widget = chatList.value(socket);
+            if(!widget)
+                return;
+
+            int index = ui->twChat->indexOf(widget);
+
+            if (index != -1)
+                ui->twChat->removeTab(index);
+
+            chatList.remove(socket);
+            widget->deleteLater();
+        });
 
         ui->lblStatus->setText("Server Mod");
 
@@ -38,16 +52,16 @@ void MainWindow::on_actionServer_Mode_triggered()
         msgBox.setText("Server is On");
         msgBox.setIcon(QMessageBox::Information);
         msgBox.exec();
-    }
+    }    
 }
 
 void MainWindow::on_actionClient_mode_triggered()
 {
     if(!isClientActive)
     {
-        server = new Server(this, false);
+        clientManager = new ClientManager(this);
 
-        connect(server, &Server::connectedToServer, this, &MainWindow::clientConnectedToServer);
+        connect(clientManager, &ClientManager::clientConnectedToServer, this, &MainWindow::clientConnectedToServer);
 
         ui->lblStatus->setText("Client Mod");
 
@@ -59,7 +73,7 @@ void MainWindow::on_actionClient_mode_triggered()
         QMessageBox msgBox;
 
         msgBox.setWindowTitle("Error");
-        msgBox.setText("Cleint is On");
+        msgBox.setText("Client is On");
         msgBox.setIcon(QMessageBox::Information);
         msgBox.exec();
     }
@@ -67,11 +81,13 @@ void MainWindow::on_actionClient_mode_triggered()
 
 void MainWindow::onInitSendFile(QString path, qint64 size)
 {
-    QString text = QString("name file: %1\n size: %2").arg(path).arg(size);;
+    auto widget = qobject_cast<ChatWidget *>(sender());
+    if (!widget)
+        return;
+
+    QString text = QString("name file: %1\n size: %2").arg(path).arg(size);
 
     auto result = QMessageBox::question(this, "Init send file", text);
-
-    auto widget = dynamic_cast<ChatWidget *>(sender());
 
     if(result == QMessageBox::Yes)
         widget->acceptedSendFile();
@@ -107,24 +123,24 @@ void MainWindow::newClientConnected(QTcpSocket *socket) //server
             return;
 
         auto widget = qobject_cast <ChatWidget *>(sender());
+        if(!widget)
+            return;
+
+        bool accepted = server->setChangeName(prevName, newName);
+        if (!accepted)
+        {
+            QTcpSocket *targetSocket = chatList.key(widget);
+            server->sendNameChangeRejected(targetSocket);
+            return;
+        }
+
         int index = ui->twChat->indexOf(widget);
 
-        ui->twChat->setTabText(index, newName);
-
-        emit clientNameChanged(prevName, newName);
-    });
-
-    connect(server, &Server::sendClientDisconnected, this, [this](QTcpSocket *socket){
-        ChatWidget *widget = chatList.value(socket);
-
-        int index = ui->twChat->indexOf(widget);
-
-        ui->twChat->removeTab(index);
-        chatList.remove(socket);
+        if (index != -1)
+            ui->twChat->setTabText(index, newName);
     });
 
     connect(chatWidget, &ChatWidget::initSendFile, this, &MainWindow::onInitSendFile);
-    connect(this, &MainWindow::clientNameChanged, server, &Server::setChangeName);
     connect(chatWidget, &ChatWidget::sendMessage, server, &Server::sendMessage);
 }
 
