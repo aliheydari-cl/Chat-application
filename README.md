@@ -21,7 +21,7 @@ This project uses **qmake**. Open `TcpServer.pro` in Qt Creator, select a kit, a
 
 ```bash
 qmake
-make        # or: mingw32-make / nmake on Windows
+make
 ```
 
 ## Usage
