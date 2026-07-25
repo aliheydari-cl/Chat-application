@@ -13,7 +13,8 @@ A simple LAN chat app built with **Qt Widgets** and **C++** (qmake). Runs as eit
 
 ## Demo
 
-<img src="image/server.png" width="45%"> <img src="image/client.png" width="45%">
+![Server](image/server.png)
+![Client](image/client.png)
 
 ## Usage
 
