@@ -1,16 +1,25 @@
 # Chat Application
 
-A simple chat application made with **Qt Widgets** and **C++**.  
-This project uses **qmake** for building.
+A simple LAN chat app built with **Qt Widgets** and **C++** (qmake). Runs as either a server or a client from the same executable.
 
 ## Features
 
-- More than one client can connect to the server.
-- Users can chat with the server and with other clients.
-- Shows typing status in real time.
-- Supports file transfer up to **85 KB**.
-
+- Server or client mode, same app
+- Multiple clients at once
+- Chat bubbles, real-time typing indicator
+- Change display name on the fly
+- File transfer
+- Consistent dark theme
 
 ## Demo
 
-![chatApplication](image/chatApplication.png)
+<img src="image/server.png" width="45%"> <img src="image/client.png" width="45%">
+
+## Usage
+
+1. Choose **Server Mode** on one machine (via the settings icon).
+2. Choose **Client Mode** on another — it connects automatically on port `6000`.
+
+## Tech Stack
+
+C++17 · Qt Widgets · Qt Network
