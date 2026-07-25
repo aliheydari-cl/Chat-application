@@ -6,6 +6,7 @@
 #include <QDesktopServices>
 #include <QMessageBox>
 #include <networkutils.h>
+#include <QStandardPaths>
 
 ChatWidget::ChatWidget(QWidget *parent, QTcpSocket *socket, bool isServer)
     : QWidget(parent)
@@ -17,12 +18,11 @@ ChatWidget::ChatWidget(QWidget *parent, QTcpSocket *socket, bool isServer)
 
     if(isServer)
     {
-        ui->nameFrame->deleteLater();
         ui->cbClients->deleteLater();
 
         QDir dir;
-        QString path = QDir::currentPath() + "/Server";
-        dir.mkdir(path);
+        QString path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ChatApplication/Server";
+        dir.mkpath(path);
         openFilePath = path;
 
         myName = "Server";
@@ -38,11 +38,11 @@ ChatWidget::~ChatWidget()
 
 void ChatWidget::setInformation(QString name, QStringList list)
 {
-    QString filePath = QDir::currentPath();
+    QString filePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ChatApplication";
     QString path = filePath + "/" + name;
     QDir dir;
 
-    dir.mkdir(path);
+    dir.mkpath(path);
 
     openFilePath = path;
     myName = name;
@@ -177,29 +177,18 @@ void ChatWidget::on_leData_textChanged()
     sendPacket(socket, protocol.setStatus());
 }
 
-void ChatWidget::on_leName_editingFinished()
+
+void ChatWidget::nameChange(QString name)
 {
-    QString name = ui->leName->text().trimmed();
+    sendPacket(socket, protocol.setName(myName, name));
 
-    if(name == "")
-        return;
+    QDir dir;
+    QString newPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ChatApplication/" + name;
+    dir.rename(openFilePath, newPath);
+    openFilePath = newPath;
 
-    sendPacket(socket, protocol.setName(myName ,name));
-
-    ui->leName->setText("");
-
-    QFile file(openFilePath);
-    file.rename(name);
-    file.close();
-
-    openFilePath = QFileInfo(file).absoluteFilePath();
     myName = name;
     socket->setProperty("name", name);
-}
-
-void ChatWidget::on_leData_editingFinished()
-{
-    on_btnSend_clicked();
 }
 
 void ChatWidget::on_btnSendFile_clicked()
@@ -298,9 +287,7 @@ void ChatWidget::setMessage(QString message, bool isMyMessage)
 
     QListWidgetItem *listWidgetItem = new QListWidgetItem();
     ui->lwChat->addItem(listWidgetItem);
-    listWidgetItem->setSizeHint(QSize(0, 65));
-    QColor backgroundColor = isMyMessage ? QColor("#A3806D") : QColor("#706761");
-    listWidgetItem->setBackground(backgroundColor);
+    listWidgetItem->setSizeHint(QSize(0, 100));
 
     ui->lwChat->setItemWidget(listWidgetItem, _textChat);
 }
@@ -313,8 +300,8 @@ void ChatWidget::loadMessage(QString message, QString receiverName)
         setMessage(message, false);
 }
 
-
-
-
-
+void ChatWidget::on_leData_editingFinished()
+{
+    on_btnSend_clicked();
+}
 

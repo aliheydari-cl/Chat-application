@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "settingdialog.h"
 #include <QMainWindow>
 #include <server.h>
 #include <chatwidget.h>
@@ -24,10 +25,14 @@ public:
 private slots:
     void newClientConnected(QTcpSocket *client);
     void clientConnectedToServer(QTcpSocket *client);
-    void on_actionServer_Mode_triggered();
-    void on_actionClient_mode_triggered();
+
+    void serverConnection();
+    void clientConnection();
+
     void onInitSendFile(QString path, qint64 size);
     void onRejectionSendFile();
+
+    void on_btnSetting_clicked();
 
 signals:
     void fileInitRejected();
@@ -36,13 +41,16 @@ signals:
 
 private:
     Ui::MainWindow *ui;
-    ChatWidget *clientChatWidget;
+    ChatWidget *chatWidget = nullptr;
 
     bool isServerActive = false;
     bool isClientActive = false;
 
-    Server *server;
-    ClientManager* clientManager;
+    Server *server = nullptr;
+    QTcpSocket *socket = nullptr;
+    SettingDialog *dialog = nullptr;
+    ClientManager* clientManager = nullptr;
+    QString myName;
 
     QMap<QTcpSocket *, ChatWidget *> chatList;
 

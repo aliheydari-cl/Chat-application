@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ChatWidget</class>
+ <widget class="QWidget" name="ChatWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>442</width>
+    <height>365</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QListWidget" name="lwChat"/>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QComboBox" name="cbClients"/>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="btnSendFile">
+           <property name="styleSheet">
+            <string notr="true">QPushButton {
+    border: none;
+    background: transparent;
+}
+QPushButton:hover {
+    background: rgba(255, 255, 255, 30);
+    border-radius: 16px;
+}</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MailAttachment"/>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leData">
+           <property name="styleSheet">
+            <string notr="true">QLineEdit {
+    border: 1px solid rgb(80, 80, 80);
+    border-radius: 10px;
+    padding: 6px 12px;
+}
+QLineEdit:focus {
+    border: 1px solid rgb(120, 150, 255);
+}</string>
+           </property>
+           <property name="placeholderText">
+            <string>Message</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnSend">
+           <property name="styleSheet">
+            <string notr="true">QPushButton {
+    background-color: rgb(55, 138, 221);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 6px 18px;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: rgb(75, 155, 235);
+}
+QPushButton:pressed {
+    background-color: rgb(40, 115, 190);
+}</string>
+           </property>
+           <property name="text">
+            <string> Send</string>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::DocumentSend"/>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblOpen">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;#&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#308cc6;&quot;&gt;Open&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

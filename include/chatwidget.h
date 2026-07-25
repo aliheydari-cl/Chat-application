@@ -29,6 +29,7 @@ public slots:
     void setMessage(QString message, bool isMyMessage = false);
     void clientNameChange(QString prevName, QString newName);
     void clientNameChangeRejected();
+    void nameChange(QString name);
 
 
 
@@ -44,15 +45,15 @@ private slots:
     void redyRead();
     void on_btnSend_clicked();
     void on_leData_textChanged();
-    void on_leName_editingFinished();
-    void on_leData_editingFinished();
-    void on_btnSendFile_clicked();
     void dataReceived(QString, QByteArray);
     void on_lblOpen_linkActivated();
     void fileRejected();
     void clientDisconnected(QString name);
+    void on_btnSendFile_clicked();
 
-private:  
+    void on_leData_editingFinished();
+
+private:
     Ui::ChatWidget *ui;
 
     QString myName;
